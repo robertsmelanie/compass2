@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Compass</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        #compass {
+            font-size: 3em;
+            margin-top: 20px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .highlight {
+            font-size: 4em;
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Enhanced Compass</h1>
+    <p>Rotate your device to get the compass reading.</p>
+    <div id="compass">Loading...</div>
+
+    <script>
+        function getSector(heading) {
+            heading = heading % 360;
+            if (heading < 0) heading += 360;
+
+            const sectors = [
+                { name: 'N', start: 337.5, end: 22.5 },
+                { name: 'NE', start: 22.5, end: 67.5 },
+                { name: 'E', start: 67.5, end: 112.5 },
+                { name: 'SE', start: 112.5, end: 157.5 },
+                { name: 'S', start: 157.5, end: 202.5 },
+                { name: 'SW', start: 202.5, end: 247.5 },
+                { name: 'W', start: 247.5, end: 292.5 },
+                { name: 'NW', start: 292.5, end: 337.5 }
+            ];
+
+            for (let sector of sectors) {
+                if (sector.start > sector.end) {
+                    if (heading >= sector.start || heading < sector.end) {
+                        const relativeAngle = (heading >= sector.start) ? heading - sector.start : 360 - sector.start + heading;
+                        return { name: sector.name, relativeAngle };
+                    }
+                } else {
+                    if (heading >= sector.start && heading < sector.end) {
+                        const relativeAngle = heading - sector.start;
+                        return { name: sector.name, relativeAngle };
+                    }
+                }
+            }
+            return { name: 'N', relativeAngle: 0 }; // Default to 'N' if no match is found
+        }
+
+        function updateCompass(event) {
+            let heading;
+            if (event.webkitCompassHeading !== undefined) {
+                heading = event.webkitCompassHeading;
+            } else {
+                heading = event.alpha;
+            }
+
+            if (heading !== null) {
+                heading = heading % 360;
+                if (heading < 0) heading += 360;
+
+                // Correct destructuring assignment
+                const { name: sector, relativeAngle } = getSector(heading);
+
+                const compassElement = document.getElementById('compass');
+                compassElement.innerText = `${sector} ${relativeAngle.toFixed(2)}° (Absolute: ${heading.toFixed(2)}°)`;
+
+                if (relativeAngle === 0) {
+                    compassElement.classList.add('highlight');
+                } else {
+                    compassElement.classList.remove('highlight');
+                }
+            } else {
+                document.getElementById('compass').innerText = "Compass data unavailable";
+            }
+        }
