@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,24 +15,27 @@
             height: 100vh;
             background-color: #f4f4f4;
         }
-
         #compass {
             font-size: 3em;
             margin-top: 20px;
             transition: all 0.3s ease-in-out;
         }
-
         .highlight {
             font-size: 4em;
             color: red;
         }
+        #enableCompass {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+        }
     </style>
 </head>
-
 <body>
     <h1>Enhanced Compass</h1>
     <p>Rotate your device to get the compass reading.</p>
     <div id="compass">Loading...</div>
+    <button id="enableCompass">Enable Compass</button>
 
     <script>
         function getSector(heading) {
@@ -71,26 +73,48 @@
             let heading;
             if (event.webkitCompassHeading !== undefined) {
                 heading = event.webkitCompassHeading;
-            } else {
+            } else if (event.alpha !== null) {
                 heading = event.alpha;
-            }
-
-            if (heading !== null) {
-                heading = heading % 360;
-                if (heading < 0) heading += 360;
-
-                // Correct destructuring assignment
-                const { name: sector, relativeAngle } = getSector(heading);
-
-                const compassElement = document.getElementById('compass');
-                compassElement.innerText = `${sector} ${relativeAngle.toFixed(2)}° (Absolute: ${heading.toFixed(2)}°)`;
-
-                if (relativeAngle === 0) {
-                    compassElement.classList.add('highlight');
-                } else {
-                    compassElement.classList.remove('highlight');
-                }
             } else {
                 document.getElementById('compass').innerText = "Compass data unavailable";
+                return;
+            }
+
+            heading = heading % 360;
+            if (heading < 0) heading += 360;
+
+            const { name: sector, relativeAngle } = getSector(heading);
+
+            const compassElement = document.getElementById('compass');
+            compassElement.innerText = `${sector} ${relativeAngle.toFixed(2)}° (Absolute: ${heading.toFixed(2)}°)`;
+
+            if (relativeAngle === 0) {
+                compassElement.classList.add('highlight');
+            } else {
+                compassElement.classList.remove('highlight');
             }
         }
+
+        document.getElementById('enableCompass').addEventListener('click', function() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(function(permissionState) {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('deviceorientation', updateCompass);
+                            document.getElementById('enableCompass').style.display = 'none';
+                        } else {
+                            alert('Permission denied. Unable to access compass data.');
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error requesting device orientation permission:', error);
+                    });
+            } else {
+                // Handle non-iOS 13+ devices
+                window.addEventListener('deviceorientation', updateCompass);
+                document.getElementById('enableCompass').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
